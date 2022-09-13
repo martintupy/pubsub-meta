@@ -1,0 +1,9 @@
+black 
+click
+google-auth-oauthlib
+google-cloud-resource-manager
+google-cloud-pubsub
+packaging
+pyyaml
+rich
+readchar

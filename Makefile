@@ -1,9 +1,6 @@
 upload:
 	sh bin/upload.sh
 
-test-upload:
-	sh bin/test-upload.sh
-
 build:
 	sh bin/build.sh
 
@@ -18,3 +15,6 @@ docker-run:
 
 format:
 	black .
+
+tag:
+	sh bin/tag.sh
