@@ -23,8 +23,12 @@ class TopicService:
         self.client = client
         self.project_service = project_service
 
-    def get_topic(self, live: Optional[Live]) -> Optional[Topic]:
+    def get_topic(self, topic_name: str) -> Optional[Topic]:
+        return self.client.publisher_client.get_topic(topic=topic_name)
+
+    def pick_topic(self, live: Live) -> Optional[Topic]:
         topic = None
+        topic_name = None
         project_id = self._pick_project_id(live)
         if project_id:
             topic_name = self._pick_topic_name(project_id, live)
@@ -34,11 +38,11 @@ class TopicService:
 
     # ======================   Pick   ======================
 
-    def _pick_project_id(self, live: Optional[Live]) -> Optional[str]:
+    def _pick_project_id(self, live: Live) -> Optional[str]:
         project_ids = self.project_service.list_projects()
         return bash_util.pick_one(project_ids, live)
 
-    def _pick_topic_name(self, project_id: str, live: Optional[Live]) -> Optional[str]:
+    def _pick_topic_name(self, project_id: str, live: Live) -> Optional[str]:
         topic_names = []
         topics = self.client.publisher_client.list_topics(project=f"projects/{project_id}")
         topics_progress: ListTopicsPager = progress(self.console, "topics", topics)

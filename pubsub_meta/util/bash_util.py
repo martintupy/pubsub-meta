@@ -4,12 +4,11 @@ from rich.live import Live
 from typing import List, Optional
 
 
-def _run_fzf(choices: List[str], live: Optional[Live]) -> List[str]:
+def _run_fzf(choices: List[str], live: Live) -> List[str]:
     choices.reverse()  # reverse order when searching - from bottom to top
     choices_str = "\n".join(choices)
     selection = []
-    if live:
-        live.stop()
+    live.stop()
     fzf_args = filter(None, ["fzf", "--ansi"])
     with tempfile.NamedTemporaryFile() as input_file:
         with tempfile.NamedTemporaryFile() as output_file:
@@ -25,6 +24,6 @@ def _run_fzf(choices: List[str], live: Optional[Live]) -> List[str]:
     return selection
 
 
-def pick_one(choices: List[str], live: Optional[Live]) -> Optional[str]:
+def pick_one(choices: List[str], live: Live) -> Optional[str]:
     result = next(iter(_run_fzf(choices, live)), None)
     return result

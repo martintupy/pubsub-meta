@@ -2,6 +2,7 @@ from google.cloud.pubsub_v1 import PublisherClient
 from google.cloud.pubsub_v1 import SubscriberClient
 from google.cloud.resourcemanager import ProjectsClient
 from google.oauth2.credentials import Credentials
+from google.cloud.monitoring_v3 import MetricServiceClient
 from rich.console import Console
 from rich.text import Text
 
@@ -14,6 +15,7 @@ class Client:
         self._projects_client = None
         self._publisher_client = None
         self._subscriber_client = None
+        self._metrics_client = None
         self.console = console
         self.config = config
         
@@ -41,3 +43,10 @@ class Client:
             with self.console.status(Text("Connecting to the API", style=const.darker_style), spinner="point"):
                 self._projects_client = ProjectsClient(credentials=self.credentials)
         return self._projects_client
+
+    @property
+    def metrics_client(self) -> MetricServiceClient:
+        if not self._metrics_client:
+            with self.console.status(Text("Connecting to the API", style=const.darker_style), spinner="point"):
+                self._metrics_client = MetricServiceClient(credentials=self.credentials)
+        return self._metrics_client

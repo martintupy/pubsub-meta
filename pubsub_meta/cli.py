@@ -8,11 +8,14 @@ from pubsub_meta.client import Client
 from pubsub_meta.config import Config
 from pubsub_meta.initialize import initialize
 from pubsub_meta.service.history_service import HistoryService
+from pubsub_meta.service.metrics_service import MetricsService
 from pubsub_meta.service.topic_service import TopicService
 from pubsub_meta.service.subscription_service import SubscriptionService
 from pubsub_meta.service.project_service import ProjectService
 from pubsub_meta.service.version_service import VersionService
 from pubsub_meta.window import Window
+from pubsub_meta.logger import Logger
+import plotext
 
 
 @click.command()
@@ -30,12 +33,21 @@ def cli(
     ctx = click.get_current_context()
     console = Console(theme=const.theme, soft_wrap=True, force_interactive=True)
     config = Config()
+    logger = Logger("pubsub-meta")
     client = Client(console, config)
     project_service = ProjectService(console, config, client)
     topic_service = TopicService(console, config, client, project_service)
     subscription_service = SubscriptionService(console, config, client, project_service)
     history_service = HistoryService(console, config, topic_service, subscription_service)
-    window = Window(console, config, topic_service, subscription_service, history_service)
+    metrics_service = MetricsService(client, logger)
+    window = Window(console, logger, config, topic_service, subscription_service, history_service, metrics_service)
+    logger.info("Init")
+
+    plotext.date_form("H:M:S")
+    plotext.plot_size(60, 15)
+    plotext.canvas_color("default")
+    plotext.axes_color("default")
+    plotext.ticks_color("default")
 
     if os.path.exists(const.PUBSUB_META_CONFIG):
         version_service = VersionService()

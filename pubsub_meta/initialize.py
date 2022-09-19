@@ -25,6 +25,8 @@ def initialize(config: Config, console: Console, project_service: ProjectService
     _print_created(console, const.PUBSUB_META_CONFIG)
     Path(const.PUBSUB_META_PROJECTS).touch()
     _print_created(console, const.PUBSUB_META_PROJECTS)
+    Path(const.PUBSUB_META_LOG).touch()
+    _print_created(console, const.PUBSUB_META_LOG)
     Path(const.PUBSUB_META_HISTORY).mkdir(parents=True, exist_ok=True)
     _print_created(console, const.PUBSUB_META_HISTORY)
     Path(const.PUBSUB_META_TOPIC_HISTORY).touch()

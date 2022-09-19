@@ -7,7 +7,6 @@ from pubsub_meta.service.subscription_service import SubscriptionService
 from pubsub_meta.util import bash_util
 from rich.console import Console
 from rich.live import Live
-from pathlib import Path
 from google.pubsub_v1.types.pubsub import Subscription, Topic
 
 
@@ -54,18 +53,14 @@ class HistoryService:
         with open(self.subscription_path, "w") as f:
             f.write("\n".join(subs))
 
-    def pick_topic(self, live: Optional[Live]) -> Optional[Topic]:
+    def pick_topic(self, live: Live) -> Optional[Topic]:
         topics = self.list_topics()
-        topic = bash_util.pick_one(topics, live)
-        result_topic = None
-        if topic:
-            result_topic = self.topic_service.get_topic(live)
-        return result_topic
+        topic_name = bash_util.pick_one(topics, live)
+        topic = self.topic_service.get_topic(topic_name)
+        return topic
 
-    def pick_subscription(self, live: Optional[Live]) -> Optional[Subscription]:
+    def pick_subscription(self, live: Live) -> Optional[Subscription]:
         subs = self.list_subscriptions()
-        sub = bash_util.pick_one(subs, live)
-        result_sub = None
-        if sub:
-            result_sub = self.subscription_service.get_subscription(live)
-        return result_sub
+        sub_name = bash_util.pick_one(subs, live)
+        subscription = self.subscription_service.get_subscription(sub_name)
+        return subscription

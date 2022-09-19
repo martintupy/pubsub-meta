@@ -8,6 +8,7 @@ from rich.box import Box
 DEFAULT_PUBSUB_META_HOME = f"{Path.home()}/.config/pubsub-meta"
 
 PUBSUB_META_HOME = os.getenv("PUBSUB_META_HOME", DEFAULT_PUBSUB_META_HOME)
+PUBSUB_META_LOG = f"{PUBSUB_META_HOME}/output.log"
 PUBSUB_META_CONFIG = f"{PUBSUB_META_HOME}/config.yaml"
 PUBSUB_META_PROJECTS = f"{PUBSUB_META_HOME}/projects"
 PUBSUB_META_HISTORY = f"{PUBSUB_META_HOME}/history"
