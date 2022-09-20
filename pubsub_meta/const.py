@@ -75,4 +75,30 @@ equal_box: Box = Box(
 """
 )
 
+BOX_RIGHT: Box = Box(
+    """\
+   │
+   │
+   │
+   │
+   │
+   │
+   │
+   │
+"""
+)
+
+BOX_BOTTOM: Box = Box(
+    """\
+    
+    
+    
+    
+    
+    
+    
+────
+"""
+)
+
 FZF_SEPARATOR = " ~ "

@@ -67,6 +67,9 @@ class Window:
         self.now: datetime = None
 
     def live_window(self):
+        self.now = datetime.now()
+        self.topic = self.history_service.last_topic()
+        self.sub = self.history_service.last_subscription()
         with Live(self.layout, auto_refresh=False, screen=True, transient=True) as live:
             self._loop(live)
 
@@ -81,13 +84,13 @@ class Window:
         tabs_content_layout.split_column(tabs_layout, content_layout)
         body_layout.split_row(views_layout, tabs_content_layout)
         window_layout.split_column(header_layout, body_layout)
-        self.now = datetime.now()
         self.panel = Panel(
             title=self.now.strftime("%Y-%m-%d %H:%M:%S"),
             title_align="right",
             subtitle=self.subtitle,
             renderable=window_layout,
             border_style=const.border_style,
+            padding=0
         )
         self.layout = Layout(self.panel)
         live.update(self.layout, refresh=True)
@@ -124,6 +127,7 @@ class Window:
         """
         Loop listening on specific keypress, updating live CLI
         """
+        self._update_content()
         self._update_panel(live)
         char = readchar.readkey()
 
@@ -172,14 +176,11 @@ class Window:
                 sub = self.subscription_service.pick_subscription(live)
                 self._update_subscription(sub)
 
-            # Refresh - topic
-            case "r" if self.view == View.topic and self.topic:
+            # Refresh
+            case "r":
                 flash_panel(live, self.layout, self.panel)
+                self.now = datetime.now()
                 self._update_topic(self.topic)
-
-            # Refresh - subscription
-            case "r" if self.view == View.subscription and self.sub:
-                flash_panel(live, self.layout, self.panel)
                 self._update_subscription(self.sub)
 
             # History - topic
@@ -198,5 +199,4 @@ class Window:
                 click.get_current_context().exit()
 
         # Infinite loop, until quitted (q)
-        self._update_content()
         self._loop(live)

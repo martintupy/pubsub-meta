@@ -4,12 +4,14 @@ import plotext
 from google.pubsub_v1.types.pubsub import Subscription, Topic
 from packaging import version
 from rich.align import Align
+from rich.box import SQUARE
 from rich.columns import Columns
 from rich.console import Group, NewLine, RenderableType
 from rich.layout import Layout
 from rich.padding import Padding
 from rich.panel import Panel
 from rich.rule import Rule
+from rich.table import Table
 from rich.text import Text
 
 from pubsub_meta import const
@@ -25,13 +27,11 @@ title = """
 def header_layout(config: Config) -> Layout:
     header_title = Align(title, align="center", style=const.info_style)
     header = Layout(name="header", size=4)
-    top = Layout(name="top", size=5)
     left = version_layout(config)
     mid = Layout(header_title)
     right = Layout(NewLine(), size=20)
     header.split_row(left, mid, right)
-    top.split_column(header, Rule(style=const.darker_style))
-    return top
+    return header
 
 
 def version_layout(config: Config) -> Layout:
@@ -48,42 +48,37 @@ def version_layout(config: Config) -> Layout:
 
 
 def views_layout(views: List[View], selected: View) -> Layout:
+    separator = Rule(style=const.darker_style)
     view_list = []
-    for i, view in enumerate(views):
-        idx = str(i + 1)
+    for view in views:
         if view == selected:
-            view = Columns([Text(f"({idx})", style=const.info_style), Text(view.name, style=const.info_style)])
-            group = Group(view, Rule(style=const.info_style))
+            view = Text(f"● {view.name}", style=const.info_style)
         else:
-            view = Columns([Text(f"({idx})"), Text(view.name)])
-            group = Group(view, Rule(style=const.darker_style))
-        view_list.append(group)
-    nav = Group(*view_list)
-    return Layout(nav, name="views", size=20)
+            view = Text(f"  {view.name}", style="default")
+        view_list.extend([view, separator])
+    views = Panel(Group(*view_list), style=const.darker_style)
+    return Layout(views, name="views", size=20)
 
 
 def tabs_layout(tabs: List[Tab], selected: Tab) -> Layout:
+    separator = Text("|", style=const.darker_style)
     tab_list = []
     for tab in tabs:
         if tab == selected:
-            text = Text(tab.name, style=const.info_style)
-            group = Group(text, Rule(style=const.info_style))
+            text = Text(f"{tab.name}", style=const.info_style)
         else:
-            text = Text(tab.name)
-            group = Group(text, Rule(style=const.darker_style))
-        tab_list.append(group)
-    nav = Padding(Columns(tab_list, padding=(0, 2)), (0, 2))
-    return Layout(nav, name="tabs", size=2)
+            text = Text(f"{tab.name}", style="default")
+        tab_list.extend([text, separator])
+    tabs = Panel(Columns(tab_list), style=const.darker_style)
+    return Layout(tabs, name="tabs", size=3)
 
 
 def content_layout(renderable: Optional[RenderableType]) -> Layout:
     if renderable:
-        content = Padding(renderable, (0, 2))
-        content_layout = Layout(content, name="content")
+        content = Panel(renderable, style=const.darker_style)
     else:
-        content = None
-        content_layout = Layout(content, name="content", visible=False)
-    return content_layout
+        content = Panel(NewLine(), style=const.darker_style)
+    return Layout(content, name="content")
 
 
 def get_init_output() -> Panel:

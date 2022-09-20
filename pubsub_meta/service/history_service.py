@@ -24,6 +24,8 @@ class HistoryService:
         self.subscription_service = subscription_service
         self.topic_path = const.PUBSUB_META_TOPIC_HISTORY
         self.subscription_path = const.PUBSUB_META_SUBSCRIPTION_HISTORY
+    
+    # ====================   List   ======================
 
     def list_topics(self) -> List[str]:
         topics = open(self.topic_path, "r").read().splitlines()
@@ -32,6 +34,23 @@ class HistoryService:
     def list_subscriptions(self) -> List[str]:
         subs = open(self.subscription_path, "r").read().splitlines()
         return subs
+
+    # ====================   Last   ======================
+    
+    def last_topic(self) -> Optional[Topic]:
+        topics = self.list_topics()
+        topic_name = topics[-1]
+        topic = self.topic_service.get_topic(topic_name)
+        return topic
+    
+    def last_subscription(self) -> Optional[Subscription]:
+        subs = self.list_subscriptions()
+        sub_name = subs[-1]
+        subscription = self.subscription_service.get_subscription(sub_name)
+        return subscription
+
+    
+    # ====================   Save   ======================
 
     def save_topic(self, topic: Topic):
         topics = self.list_topics()
@@ -52,6 +71,8 @@ class HistoryService:
         subs.append(sub.name)
         with open(self.subscription_path, "w") as f:
             f.write("\n".join(subs))
+            
+    # ====================   Pick   ======================
 
     def pick_topic(self, live: Live) -> Optional[Topic]:
         topics = self.list_topics()
