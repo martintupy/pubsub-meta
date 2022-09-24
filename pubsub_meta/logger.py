@@ -1,8 +1,7 @@
-from logging import LogRecord
 import logging
+from logging import LogRecord
 
 from pubsub_meta import const
-import pathlib
 
 COLORS = {"INFO": "00AD3A", "WARNING": "EF8D49", "ERROR": "CD0F0F", "DEBUG": "FFFFFF"}
 
@@ -36,11 +35,10 @@ class ColoredFormatter(logging.Formatter):
 
 class Logger(logging.Logger):
     def __init__(self, name):
-        logging.Logger.__init__(self, name, logging.DEBUG)
+        logging.Logger.__init__(self, name)
         fmt = "%(levelname)s %(asctime)s %(threadName)s %(filename)s - %(message)s"
         datefmt = "%Y-%m-%d %H:%M:%S"
         color_formatter = ColoredFormatter(fmt, datefmt)
         console = logging.FileHandler(const.PUBSUB_META_LOG)
         console.setFormatter(color_formatter)
         self.addHandler(console)
-

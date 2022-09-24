@@ -1,22 +1,18 @@
 from typing import List, Optional
 
-import plotext
 from google.pubsub_v1.types.pubsub import Subscription, Topic
 from packaging import version
 from rich.align import Align
-from rich.box import SQUARE
 from rich.columns import Columns
 from rich.console import Group, NewLine, RenderableType
 from rich.layout import Layout
-from rich.padding import Padding
 from rich.panel import Panel
 from rich.rule import Rule
-from rich.table import Table
 from rich.text import Text
 
 from pubsub_meta import const
 from pubsub_meta.config import Config
-from pubsub_meta.window import Tab, View
+from pubsub_meta.window import Nav, Tab
 
 title = """
 █▀▄ █ █ ██▄ ▄▀▀ █ █ ██▄   █▄ ▄█ ██▀ ▀█▀ ▄▀▄ █▀▄ ▄▀▄ ▀█▀ ▄▀▄
@@ -47,17 +43,17 @@ def version_layout(config: Config) -> Layout:
     return Layout(version_text, size=20)
 
 
-def views_layout(views: List[View], selected: View) -> Layout:
+def nav_layout(navs: List[Nav], selected: Nav) -> Layout:
     separator = Rule(style=const.darker_style)
-    view_list = []
-    for view in views:
-        if view == selected:
-            view = Text(f"● {view.name}", style=const.info_style)
+    nav_list: list[RenderableType] = []
+    for nav in navs:
+        if nav == selected:
+            text = Text(f"● {nav.name}", style=const.info_style)
         else:
-            view = Text(f"  {view.name}", style="default")
-        view_list.extend([view, separator])
-    views = Panel(Group(*view_list), style=const.darker_style)
-    return Layout(views, name="views", size=20)
+            text = Text(f"  {nav.name}", style="default")
+        nav_list.extend([text, separator])
+    panel = Panel(Group(*nav_list), style=const.darker_style)
+    return Layout(panel, name="nav", size=20)
 
 
 def tabs_layout(tabs: List[Tab], selected: Tab) -> Layout:
@@ -69,8 +65,8 @@ def tabs_layout(tabs: List[Tab], selected: Tab) -> Layout:
         else:
             text = Text(f"{tab.name}", style="default")
         tab_list.extend([text, separator])
-    tabs = Panel(Columns(tab_list), style=const.darker_style)
-    return Layout(tabs, name="tabs", size=3)
+    panel = Panel(Columns(tab_list), style=const.darker_style)
+    return Layout(panel, name="tab", size=3)
 
 
 def content_layout(renderable: Optional[RenderableType]) -> Layout:
@@ -118,12 +114,6 @@ def get_subscription_output(sub: Subscription) -> Group:
         text_tuple("Filter", sub.filter),
         text_tuple("State", sub.state),
     )
-
-
-def get_subscription_metrics_output(dates: list, points: list) -> Text:
-    dates = plotext.datetimes_to_string(dates)
-    plotext.plot(dates, points)
-    return Text(plotext.build())
 
 
 def get_topic_output(topic: Topic) -> Group:

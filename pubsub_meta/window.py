@@ -1,32 +1,29 @@
 from datetime import datetime
 from enum import Enum
-from typing import List, Optional
+from typing import Optional
 
 import click
 import readchar
+from google.pubsub_v1.types.pubsub import Subscription, Topic
 from readchar import key
 from rich.console import Console, RenderableType
 from rich.layout import Layout
 from rich.live import Live
-from google.pubsub_v1.types.pubsub import Topic
-from google.pubsub_v1.types.pubsub import Subscription
 from rich.panel import Panel
-from rich.padding import Padding
-from rich.text import Text
-from rich.console import Group
 
 from pubsub_meta import const, output
 from pubsub_meta.config import Config
 from pubsub_meta.logger import Logger
+from pubsub_meta.service.history_service import HistoryService
 from pubsub_meta.service.metrics_service import MetricsService
+from pubsub_meta.view.metrics_view import MetricsView
 from pubsub_meta.service.subscription_service import SubscriptionService
 from pubsub_meta.service.topic_service import TopicService
-from pubsub_meta.service.history_service import HistoryService
 from pubsub_meta.types import SubscriptionParsed
 from pubsub_meta.util.rich_utils import flash_panel
 
 
-class View(Enum):
+class Nav(Enum):
     topic = 1
     subscription = 2
     snapshots = 3
@@ -49,25 +46,26 @@ class Window:
         history_service: HistoryService,
         metrics_service: MetricsService,
     ):
-        self.console = console
-        self.logger = logger
-        self.config = config
-        self.subscription_service = subscription_service
-        self.topic_service = topic_service
-        self.history_service = history_service
-        self.metrics_service = metrics_service
+        self.console: Console = console
+        self.logger: Logger = logger
+        self.config: Config = config
+        self.subscription_service: SubscriptionService = subscription_service
+        self.topic_service: TopicService = topic_service
+        self.history_service: HistoryService = history_service
+        self.metrics_service: MetricsService = metrics_service
+        self.metrics_view: MetricsView = MetricsView(logger, metrics_service)
         self.layout: Layout = Layout()
         self.content: Optional[RenderableType] = None
-        self.view: View = View.topic
+        self.nav: Nav = Nav.topic
         self.tab: Tab = Tab.detail
         self.subtitle: str = "open (o) | refresh (r) | history (h) | quit (q)"
         self.sub: Optional[Subscription] = None
         self.sub_parsed: Optional[SubscriptionParsed] = None
         self.topic: Optional[Topic] = None
-        self.now: datetime = None
+        self.now: datetime = datetime.utcnow()
 
     def live_window(self):
-        self.now = datetime.now()
+        self.now = datetime.utcnow()
         self.topic = self.history_service.last_topic()
         self.sub = self.history_service.last_subscription()
         with Live(self.layout, auto_refresh=False, screen=True, transient=True) as live:
@@ -78,37 +76,32 @@ class Window:
         body_layout = Layout(name="body")
         tabs_content_layout = Layout(name="tabs_content")
         header_layout = output.header_layout(self.config)
-        views_layout = output.views_layout(View, self.view)
+        nav_layout = output.nav_layout(list(Nav), self.nav)
         content_layout = output.content_layout(self.content)
-        tabs_layout = output.tabs_layout(Tab, self.tab)
+        tabs_layout = output.tabs_layout(list(Tab), self.tab)
         tabs_content_layout.split_column(tabs_layout, content_layout)
-        body_layout.split_row(views_layout, tabs_content_layout)
+        body_layout.split_row(nav_layout, tabs_content_layout)
         window_layout.split_column(header_layout, body_layout)
         self.panel = Panel(
-            title=self.now.strftime("%Y-%m-%d %H:%M:%S"),
+            title=self.now.strftime("%Y-%m-%d %H:%M:%S UTC"),
             title_align="right",
             subtitle=self.subtitle,
             renderable=window_layout,
             border_style=const.border_style,
-            padding=0
+            padding=0,
         )
         self.layout = Layout(self.panel)
         live.update(self.layout, refresh=True)
 
     def _update_content(self):
-        self.logger.info(f"update content: {self.view}, {self.tab}")
-        match (self.view, self.tab):
-            case (View.topic, Tab.detail) if self.topic:
+        self.logger.info(f"Content: {self.nav}, {self.tab}")
+        match (self.nav, self.tab):
+            case (Nav.topic, Tab.detail) if self.topic:
                 self.content = output.get_topic_output(self.topic)
-            case (View.subscription, Tab.detail) if self.sub:
+            case (Nav.subscription, Tab.detail) if self.sub:
                 self.content = output.get_subscription_output(self.sub)
-            case (View.subscription, Tab.metrics) if self.sub_parsed:
-                dates, points = self.metrics_service.undelivered_messages(
-                    self.sub_parsed.project_id,
-                    self.sub_parsed.subscription_id,
-                    self.now,
-                )
-                self.content = output.get_subscription_metrics_output(dates, points)
+            case (Nav.subscription, Tab.metrics) if self.sub:
+                self.content = self.metrics_view.get_metrics_output(self.sub, self.now)
             case _:
                 self.content = None
 
@@ -133,12 +126,12 @@ class Window:
 
         match char:
             case key.UP:
-                idx = max([list(View)[0].value, self.view.value - 1])
-                self.view = View(idx)
+                idx = max([list(Nav)[0].value, self.nav.value - 1])
+                self.nav = Nav(idx)
 
             case key.DOWN:
-                idx = min([list(View)[-1].value, self.view.value + 1])
-                self.view = View(idx)
+                idx = min([list(Nav)[-1].value, self.nav.value + 1])
+                self.nav = Nav(idx)
 
             case key.LEFT:
                 idx = max([list(Tab)[0].value, self.tab.value - 1])
@@ -149,16 +142,16 @@ class Window:
                 self.tab = Tab(idx)
 
             case "1":
-                self.view = View.topic
+                self.nav = Nav.topic
 
             case "2":
-                self.view = View.subscription
+                self.nav = Nav.subscription
 
             case "3":
-                self.view = View.snapshots
+                self.nav = Nav.snapshots
 
             case "4":
-                self.view = View.schemas
+                self.nav = Nav.schemas
 
             case key.F1:
                 self.tab = Tab.detail
@@ -167,29 +160,29 @@ class Window:
                 self.tab = Tab.metrics
 
             # Open - topic
-            case "o" if self.view == View.topic:
+            case "o" if self.nav == Nav.topic:
                 topic = self.topic_service.pick_topic(live)
                 self._update_topic(topic)
 
             # Open - subscription
-            case "o" if self.view == View.subscription:
+            case "o" if self.nav == Nav.subscription:
                 sub = self.subscription_service.pick_subscription(live)
                 self._update_subscription(sub)
 
             # Refresh
             case "r":
                 flash_panel(live, self.layout, self.panel)
-                self.now = datetime.now()
+                self.now = datetime.utcnow()
                 self._update_topic(self.topic)
                 self._update_subscription(self.sub)
 
             # History - topic
-            case "h" if self.view == View.topic:
+            case "h" if self.nav == Nav.topic:
                 topic = self.history_service.pick_topic(live)
                 self._update_topic(topic)
 
             # History - subscription
-            case "h" if self.view == View.subscription:
+            case "h" if self.nav == Nav.subscription:
                 sub = self.history_service.pick_subscription(live)
                 self._update_subscription(sub)
 

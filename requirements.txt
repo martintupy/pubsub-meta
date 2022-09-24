@@ -3,7 +3,9 @@ click
 google-auth-oauthlib
 google-cloud-resource-manager
 google-cloud-pubsub
+google-cloud-monitoring
 packaging
 pyyaml
+plotext
 rich
 readchar
